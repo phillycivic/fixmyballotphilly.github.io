@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unverifiable Ballots</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        input {
+            margin: 20px;
+            padding: 10px;
+            width: 300px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>2024 General Election Deficiency List</h1>
+    <p>
+        Philadelphia’s Office of the City Commissioners has released the 2024 General Election Deficiency List.
+        This list contains voters whose ballots have issues that may prevent them from being counted, including unverifiable identification, undeliverable ballots, or other potential flaws.
+        Voters on this list should contact the Office of the City Commissioners as soon as possible to resolve the issue and ensure their vote is counted.
+    </p>
+    <p>
+        For more information, visit the following link to view the complete deficiency list and instructions on how to resolve these issues:
+    </p>
+    <p>
+        <a href="https://vote.phila.gov/news/2024/10/08/2024-general-election-unverifiable-identification-undeliverable-and-or-potentially-flawed-ballots/" target="_blank">
+            2024 General Election Unverifiable Identification, Undeliverable, and/or Potentially Flawed Ballots
+        </a>
+    </p>
+
+    <p><b>This site checks the list every hour and updates it accordingly.</b></p>
+
+    <input type="text" id="searchInput" placeholder="Search for names..">
+
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>ID Number</th>
+                <th>Name</th>
+                <th>Ward</th>
+                <th>Division</th>
+                <th>Birth Year</th>
+                <th>Zip</th>
+                <th>Ballot Status Reason</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <!-- Rows will be dynamically inserted here -->
+        </tbody>
+    </table>
+
+    <!-- SheetJS library for Excel file parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+
+    <script>
+        let data = [];
+
+        const tableBody = document.getElementById('tableBody');
+
+        // Function to populate the table
+        function populateTable(data) {
+            tableBody.innerHTML = '';
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                Object.values(row).forEach(value => {
+                    const td = document.createElement('td');
+                    td.textContent = value;
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Load the Excel file from local server
+        async function loadExcelFromFile() {
+            const response = await fetch('ineligible_voters.xlsx');
+            const arrayBuffer = await response.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            // Store the data globally for filtering later
+            window.data = jsonData;
+
+            // Populate the table with the parsed data
+            populateTable(jsonData);
+        }
+
+        // Call the function to load the Excel file from local file
+        loadExcelFromFile();
+
+        // Fuzzy search
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const filteredData = window.data.filter(row => row.Name && row.Name.toLowerCase().includes(searchTerm));
+            populateTable(filteredData);
+        });
+    </script>
+
+</body>
+</html>
