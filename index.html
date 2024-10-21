@@ -43,6 +43,9 @@
         </a>
     </p>
 
+
+    <p class="last-updated" id="lastUpdated">Loading last updated date...</p>
+
     <div class="table-container">
         <table id="dataTable" class="display responsive nowrap" style="width:100%">
             <thead>
@@ -116,6 +119,31 @@
 
             // Call the function to load the Excel file and populate the DataTable
             loadExcelData();
+
+
+
+            // Function to get the last updated date of a GitHub file
+            function getGitHubLastUpdated(owner, repo, filePath) {
+                const apiUrl = `https://api.github.com/repos/${owner}/${repo}/commits?path=${filePath}&page=1&per_page=1`;
+                fetch(apiUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            const lastCommitDate = data[0].commit.committer.date;
+                            const formattedDate = new Date(lastCommitDate).toLocaleString();
+                            $('#lastUpdated').text(`This data is up to date as of: ${formattedDate}`);
+                        } else {
+                            $('#lastUpdated').text('Last updated date not available');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching the last updated date:', error);
+                        $('#lastUpdated').text('Error fetching last updated date');
+                    });
+            }
+
+            // Get the last updated date for the file in the phillycivic GitHub repo
+            getGitHubLastUpdated('phillycivic', 'fixmyballotphilly.github.io', 'ineligible_voters.xlsx');
         });
     </script>
 
