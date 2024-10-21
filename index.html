@@ -4,30 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unverifiable Ballots</title>
+
+    <!-- Include DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <!-- Include DataTables Responsive Extension CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.dataTables.min.css">
+
     <style>
         body {
             font-family: Arial, sans-serif;
+            padding: 20px;
         }
-        input {
-            margin: 20px;
-            padding: 10px;
-            width: 300px;
+        .table-container {
+            margin-top: 20px;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        th, td {
-            padding: 12px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
+        /* Style to move the search bar to the left */
+        .dataTables_filter {
+            float: left !important;
+            text-align: left !important;
+            padding-right: 10px !important;
         }
     </style>
 </head>
@@ -48,73 +43,81 @@
         </a>
     </p>
 
-    <p><b>This site checks the list every hour and updates it accordingly.</b></p>
+    <div class="table-container">
+        <table id="dataTable" class="display responsive nowrap" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Birth Year</th>
+                    <th>ID Number</th>
+                    <th>Ward</th>
+                    <th>Division</th>
+                    <th>Zip</th>
+                    <th>Ballot Status</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be dynamically inserted here -->
+            </tbody>
+        </table>
+    </div>
 
-    <input type="text" id="searchInput" placeholder="Search for names..">
-
-    <table id="dataTable">
-        <thead>
-            <tr>
-                <th>ID Number</th>
-                <th>Name</th>
-                <th>Ward</th>
-                <th>Division</th>
-                <th>Birth Year</th>
-                <th>Zip</th>
-                <th>Ballot Status Reason</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody">
-            <!-- Rows will be dynamically inserted here -->
-        </tbody>
-    </table>
-
-    <!-- SheetJS library for Excel file parsing -->
+    <!-- Include jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Include DataTables JS -->
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <!-- Include DataTables Responsive Extension JS -->
+    <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+    <!-- Include SheetJS for Excel parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 
     <script>
-        let data = [];
-
-        const tableBody = document.getElementById('tableBody');
-
-        // Function to populate the table
-        function populateTable(data) {
-            tableBody.innerHTML = '';
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                Object.values(row).forEach(value => {
-                    const td = document.createElement('td');
-                    td.textContent = value;
-                    tr.appendChild(td);
-                });
-                tableBody.appendChild(tr);
+        $(document).ready(function () {
+            // Initialize DataTable with custom DOM positioning
+            var table = $('#dataTable').DataTable({
+                responsive: true,
+                dom: '<"top"fl>rt<"bottom"ip><"clear">', // Custom DOM: 'l' for length dropdown, 'f' for filter (search)
             });
-        }
 
-        // Load the Excel file from local server
-        async function loadExcelFromFile() {
-            const response = await fetch('ineligible_voters.xlsx');
-            const arrayBuffer = await response.arrayBuffer();
-            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+            // Function to process the Excel file and load data into DataTable
+            function loadExcelData() {
+                const inputFile = 'ineligible_voters.xlsx'; // Local Excel file
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', inputFile, true);
+                xhr.responseType = 'arraybuffer';
 
-            // Store the data globally for filtering later
-            window.data = jsonData;
+                xhr.onload = function (e) {
+                    const arrayBuffer = xhr.response;
+                    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-            // Populate the table with the parsed data
-            populateTable(jsonData);
-        }
+                    // Transform JSON data to array of arrays for DataTables
+                    const dataToAdd = jsonData.map(row => [
+                        row["Name"] || '',
+                        row["Birth Year"] || '',
+                        row["ID Number"] || '',
+                        row["Ward"] || '',
+                        row["Division"] || '',
+                        row["Zip"] || '',
+                        row["Ballot Status"] || '',
+                        row["Reason"] || ''
+                    ]);
 
-        // Call the function to load the Excel file from local file
-        loadExcelFromFile();
+                    // Clear existing data in the table
+                    table.clear();
 
-        // Fuzzy search
-        document.getElementById('searchInput').addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const filteredData = window.data.filter(row => row.Name && row.Name.toLowerCase().includes(searchTerm));
-            populateTable(filteredData);
+                    // Batch add all rows at once
+                    table.rows.add(dataToAdd).draw();
+                };
+
+                xhr.send();
+            }
+
+            // Call the function to load the Excel file and populate the DataTable
+            loadExcelData();
         });
     </script>
 
