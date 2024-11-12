@@ -26,7 +26,7 @@ jobs:
 
       - name: Download Excel File
         run: |
-          curl -L -o ineligible_voters.xlsx https://vote.phila.gov/media/2024_General_Election_Deficiency_List_.xlsxx
+          curl -L -o ineligible_voters.xlsx https://vote.phila.gov/media/2024_General_Election_Deficiency_List_.xlsx
 
       - name: Commit and Push Changes
         run: |
