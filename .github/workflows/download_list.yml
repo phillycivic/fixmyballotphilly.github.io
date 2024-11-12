@@ -26,12 +26,17 @@ jobs:
 
       - name: Download Excel File
         run: |
-          curl -L -o ineligible_voters.xlsx https://vote.phila.gov/media/2024_General_Election_Deficiency_List.xlsx
+          curl -L -o ineligible_voters.xlsx https://vote.phila.gov/media/2024_General_Election_Deficiency_List_.xlsx
 
       - name: Commit and Push Changes
         run: |
-          git config --local user.email "actions@github.com"
-          git config --local user.name "GitHub Actions"
-          git add ineligible_voters.xlsx
-          git commit -m 'Add updated ineligible_voters.xlsx'
-          git push
+          if [ $(stat -c%s "ineligible_voters.xlsx") -ge 1024 ]; then
+            git config --local user.email "actions@github.com"
+            git config --local user.name "GitHub Actions"
+            git add ineligible_voters.xlsx
+            git commit -m 'Add updated ineligible_voters.xlsx'
+            git push
+          else
+            echo "File size is less than 1 KB; failing the action."
+            exit 1
+          fi
